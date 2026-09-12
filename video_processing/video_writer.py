@@ -6,7 +6,9 @@ def create_video(frame_folder, output_path, fps=10):
     frame_files = sorted(
         [
             file for file in os.listdir(frame_folder)
-            if file.endswith(".jpg")
+            if file.startswith("frame_")
+            and file.endswith(".jpg")
+            and "_processed" not in file
         ]
     )
 
