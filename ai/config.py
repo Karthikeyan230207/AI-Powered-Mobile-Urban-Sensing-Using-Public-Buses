@@ -1,0 +1,6 @@
+POTHOLE_MODEL_PATH = "models/pothole_model.pt"
+CRACK_MODEL_PATH = "models/crack_model.pt"
+OBJECT_MODEL_PATH = "yolo11n.pt"
+
+CONFIDENCE_THRESHOLD = 0.40
+IMAGE_SIZE = 640
