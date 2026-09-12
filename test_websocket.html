@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>M6 WebSocket Test</title>
+</head>
+
+<body>
+
+    <h1>M6 WebSocket Test</h1>
+
+    <p id="status">Connecting...</p>
+
+    <h3>Received Event:</h3>
+
+    <pre id="output">
+Waiting for incident...
+    </pre>
+
+    <script>
+
+        const socket =
+            new WebSocket(
+                "ws://127.0.0.1:8000/ws/incidents"
+            );
+
+
+        socket.onopen = function () {
+
+            console.log(
+                "[TEST] Connected"
+            );
+
+            document.getElementById(
+                "status"
+            ).textContent =
+                "🟢 Connected to M6 WebSocket";
+        };
+
+
+        socket.onmessage = function (event) {
+
+            console.log(
+                "[TEST] RECEIVED EVENT:",
+                event.data
+            );
+
+            document.getElementById(
+                "output"
+            ).textContent =
+                JSON.stringify(
+                    JSON.parse(event.data),
+                    null,
+                    2
+                );
+        };
+
+
+        socket.onerror = function (error) {
+
+            console.error(
+                "[TEST] WebSocket ERROR:",
+                error
+            );
+
+            document.getElementById(
+                "status"
+            ).textContent =
+                "🔴 WebSocket Error";
+        };
+
+
+        socket.onclose = function (event) {
+
+            console.log(
+                "[TEST] WebSocket CLOSED",
+                event.code,
+                event.reason
+            );
+
+            document.getElementById(
+                "status"
+            ).textContent =
+                "🟠 WebSocket Disconnected";
+        };
+
+    </script>
+
+</body>
+</html>
