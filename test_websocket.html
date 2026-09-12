@@ -10,76 +10,54 @@
 
     <p id="status">Connecting...</p>
 
-    <h3>Received Event:</h3>
+    <h3>Received Events:</h3>
 
-    <pre id="output">
-Waiting for incident...
-    </pre>
+    <pre id="output"></pre>
 
     <script>
 
-        const socket =
-            new WebSocket(
-                "ws://127.0.0.1:8000/ws/incidents"
-            );
+        console.log("PAGE LOADED");
 
+        const socket = new WebSocket(
+            "ws://127.0.0.1:8000/ws/incidents"
+        );
 
-        socket.onopen = function () {
+        socket.onopen = () => {
+            console.log("WS OPEN");
 
-            console.log(
-                "[TEST] Connected"
-            );
-
-            document.getElementById(
-                "status"
-            ).textContent =
-                "🟢 Connected to M6 WebSocket";
+            document.getElementById("status").textContent =
+                "🟢 Connected";
         };
 
+        socket.onmessage = (event) => {
 
-        socket.onmessage = function (event) {
+            console.log("WS MESSAGE RECEIVED:", event.data);
 
-            console.log(
-                "[TEST] RECEIVED EVENT:",
-                event.data
-            );
+            const output = document.getElementById("output");
 
-            document.getElementById(
-                "output"
-            ).textContent =
-                JSON.stringify(
-                    JSON.parse(event.data),
-                    null,
-                    2
-                );
+            output.textContent +=
+                event.data +
+                "\n\n========================\n\n";
         };
 
+        socket.onerror = (error) => {
 
-        socket.onerror = function (error) {
+            console.error("WS ERROR:", error);
 
-            console.error(
-                "[TEST] WebSocket ERROR:",
-                error
-            );
-
-            document.getElementById(
-                "status"
-            ).textContent =
+            document.getElementById("status").textContent =
                 "🔴 WebSocket Error";
         };
 
-
-        socket.onclose = function (event) {
+        socket.onclose = (event) => {
 
             console.log(
-                "[TEST] WebSocket CLOSED",
-                event.code,
-                event.reason
+                "WS CLOSED",
+                "code:", event.code,
+                "reason:", event.reason,
+                "clean:", event.wasClean
             );
 
-            document.getElementById(
-                "status"
-            ).textContent =
+            document.getElementById("status").textContent =
                 "🟠 WebSocket Disconnected";
         };
 
