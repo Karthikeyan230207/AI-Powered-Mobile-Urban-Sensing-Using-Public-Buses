@@ -4,10 +4,16 @@ import os
 from video_processing.frame_extractor import extract_frames
 from video_processing.frame_sampler import sample_frames
 from video_processing.frame_preprocessor import preprocess_frame
-
+from video_processing.config import (
+    INPUT_VIDEO,
+    FRAME_FOLDER,
+    FRAME_SAMPLE_INTERVAL,
+    FRAME_WIDTH,
+    FRAME_HEIGHT
+)
 
 def process_video(video_path):
-    output_folder = "data/frames"
+    output_folder = FRAME_FOLDER
 
     # Step 1: Extract frames
     extract_frames(video_path, output_folder)
@@ -24,7 +30,10 @@ def process_video(video_path):
 )
 
     # Step 3: Sample frames
-    sampled_files = sample_frames(frame_files, interval=5)
+    sampled_files = sample_frames(
+    frame_files,
+    interval=FRAME_SAMPLE_INTERVAL
+)
 
     print(f"Total extracted frames: {len(frame_files)}")
     print(f"Total sampled frames: {len(sampled_files)}")
@@ -36,7 +45,11 @@ def process_video(video_path):
         if frame is None:
             continue
 
-        processed_frame = preprocess_frame(frame)
+        processed_frame = preprocess_frame(
+    frame,
+    width=FRAME_WIDTH,
+    height=FRAME_HEIGHT
+)
 
         print(f"Processed: {frame_file}")
 
@@ -44,4 +57,4 @@ def process_video(video_path):
 
 
 if __name__ == "__main__":
-    process_video("input.mp4")
+    process_video(INPUT_VIDEO)
