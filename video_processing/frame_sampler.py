@@ -1,4 +1,7 @@
 def sample_frames(frames, interval=5):
+    if interval <= 0:
+        raise ValueError("Sampling interval must be greater than 0.")
+
     sampled_frames = []
 
     for i in range(0, len(frames), interval):
@@ -12,5 +15,6 @@ if __name__ == "__main__":
 
     sampled = sample_frames(frames, interval=5)
 
-    print("Original frames:", frames)
+    print("Original frame count:", len(frames))
+    print("Sampled frame count:", len(sampled))
     print("Sampled frames:", sampled)
