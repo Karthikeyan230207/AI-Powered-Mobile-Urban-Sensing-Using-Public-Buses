@@ -4,15 +4,17 @@ import os
 from video_processing.frame_extractor import extract_frames
 from video_processing.frame_sampler import sample_frames
 from video_processing.frame_preprocessor import preprocess_frame
-from video_processing.config import (
+from video_processing.config import (    
     INPUT_VIDEO,
     FRAME_FOLDER,
     FRAME_SAMPLE_INTERVAL,
     FRAME_WIDTH,
     FRAME_HEIGHT
 )
+from ai.ai_detector import AIDetector
 
 def process_video(video_path):
+    detector = AIDetector()
     output_folder = FRAME_FOLDER
 
     # Step 1: Extract frames
@@ -49,7 +51,9 @@ def process_video(video_path):
     frame,
     width=FRAME_WIDTH,
     height=FRAME_HEIGHT
-)
+        )
+        detections = detector.detect(processed_frame)
+        print(f"Detections for {frame_file}: {detections}")
 
         print(f"Processed: {frame_file}")
 
