@@ -20,6 +20,7 @@ import random
 import uuid
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, timezone
+import requests
 
 try:
     from . import config, geo_utils, gps, priority, severity
@@ -250,7 +251,43 @@ def mock_detection_stream(count=8, seed=config.MOCK_RANDOM_SEED):
     rng = random.Random(seed)
     return [mock_detection(rng) for _ in range(count)]
 
+# --------------------------------------------------------------------------
+# M4 -> M3 integration
+# --------------------------------------------------------------------------
 
+M3_INCIDENT_URL = "http://127.0.0.1:8000/api/incidents/from-m4"
+
+
+def send_incident_to_m3(incident):
+    """Send one completed M4 incident to the M3 backend."""
+
+    try:
+        response = requests.post(
+            M3_INCIDENT_URL,
+            json=incident.to_dict(),
+            timeout=10
+        )
+
+        response.raise_for_status()
+
+        result = response.json()
+
+        print(
+            f"[M4 -> M3] Incident sent successfully | "
+            f"M4 ID: {incident.incident_id} | "
+            f"M3 DB ID: {result.get('database_id')}"
+        )
+
+        return result
+
+    except requests.RequestException as error:
+        print(
+            f"[M4 -> M3] Failed to send incident "
+            f"{incident.incident_id}: {error}"
+        )
+
+        return None
+    
 def run_demo(count=6, seed=config.MOCK_RANDOM_SEED, show_json=True):
     """End-to-end mock run: detections in, scored incident JSON out."""
     builder = IncidentBuilder(gps_provider=gps.MockGPSProvider(seed=seed))
@@ -263,6 +300,8 @@ def run_demo(count=6, seed=config.MOCK_RANDOM_SEED, show_json=True):
     print("=" * 78)
     for incident in incidents:
         print(incident.summary())
+
+        send_incident_to_m3(incident)
 
     if incidents and show_json:
         print("\n" + "-" * 78)
