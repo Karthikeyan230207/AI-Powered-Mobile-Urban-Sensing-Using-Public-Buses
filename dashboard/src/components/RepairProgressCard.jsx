@@ -54,7 +54,7 @@ export default function RepairProgressCard({ total = 0, repaired = 0, pending = 
         </ul>
       </div>
 
-      <div className="repair-card__banner">
+      <div className="repair-card__banner" hidden={total <= 0}>
         <span className="repair-card__banner-icon">
           <IconCheck size={13} strokeWidth={3} />
         </span>

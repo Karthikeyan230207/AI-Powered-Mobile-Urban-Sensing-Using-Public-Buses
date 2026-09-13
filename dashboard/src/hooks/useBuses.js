@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { getBuses } from "../services/api";
+import { getBuses, getErrorMessage } from "../services/api";
 
 export default function useBuses() {
   const [buses, setBuses] = useState([]);
@@ -14,7 +14,7 @@ export default function useBuses() {
       const data = await getBuses();
       setBuses(Array.isArray(data) ? data : data?.buses || data?.items || []);
     } catch (err) {
-      setError(err);
+      setError(getErrorMessage(err, "Could not load the bus fleet."));
     } finally {
       setLoading(false);
     }

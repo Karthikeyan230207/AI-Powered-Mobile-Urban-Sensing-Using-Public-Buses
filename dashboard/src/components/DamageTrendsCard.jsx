@@ -94,6 +94,10 @@ export default function DamageTrendsCard({ days = [], detected = [], repaired = 
           />
         ))}
       </svg>
+
+      {days.length === 0 && !(detected.length || repaired.length) && (
+        <div className="state-message state-message--inset">No incident data for the selected period yet.</div>
+      )}
     </section>
   );
 }

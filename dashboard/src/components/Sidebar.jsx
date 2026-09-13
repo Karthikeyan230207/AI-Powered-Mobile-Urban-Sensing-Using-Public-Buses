@@ -1,21 +1,17 @@
 import React from "react";
 import {
   IconHome,
-  IconRoad,
   IconWarning,
-  IconMapPin,
   IconDocument,
   IconGear,
   IconBus,
 } from "./icons";
 
 const NAV_ITEMS = [
-  { key: "overview", label: "Overview", icon: IconHome, href: "/" },
-  { key: "analysis", label: "Road Damage Analysis", icon: IconRoad, href: "/incidents" },
-  { key: "incidents", label: "Incidents", icon: IconWarning, href: "/incidents" },
-  { key: "map", label: "Live Map", icon: IconMapPin, href: "/analytics" },
-  { key: "reports", label: "Reports", icon: IconDocument, href: "/analytics" },
-  { key: "settings", label: "Settings", icon: IconGear, href: "/settings" },
+  { key: "overview", label: "Overview", icon: IconHome, href: "#/" },
+  { key: "incidents", label: "Incidents", icon: IconWarning, href: "#/incidents" },
+  { key: "analytics", label: "Analytics", icon: IconDocument, href: "#/analytics" },
+  { key: "settings", label: "Settings", icon: IconGear, href: "#/settings" },
 ];
 
 export default function Sidebar({ active = "overview" }) {
@@ -42,6 +38,7 @@ export default function Sidebar({ active = "overview" }) {
               key={item.key}
               href={item.href}
               className={`sidebar__link${isActive ? " sidebar__link--active" : ""}`}
+              aria-current={isActive ? "page" : undefined}
             >
               <Icon size={18} strokeWidth={isActive ? 2.4 : 2} />
               <span>{item.label}</span>

@@ -12,9 +12,9 @@ export default function Navbar() {
       </div>
 
       <nav className="navbar__links" aria-label="Main navigation">
-        <a className="navbar__link navbar__link--active" href="/">Dashboard</a>
-        <a className="navbar__link" href="/incidents">Incidents</a>
-        <a className="navbar__link" href="/analytics">Analytics</a>
+        <a className="navbar__link navbar__link--active" href="#/">Dashboard</a>
+        <a className="navbar__link" href="#/incidents">Incidents</a>
+        <a className="navbar__link" href="#/analytics">Analytics</a>
       </nav>
 
       <div className="navbar__status">

@@ -9,7 +9,7 @@ export default function TopLocationsCard({ locations = [] }) {
           <IconMapPin size={16} />
           <h2>Top Locations</h2>
         </div>
-        <a className="panel__link" href="#incidents">
+        <a className="panel__link" href="#/incidents">
           View All <IconArrowRight size={13} />
         </a>
       </div>

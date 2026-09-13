@@ -1,5 +1,7 @@
 from typing import List
 
+from sqlalchemy import func
+
 from fastapi import (
     FastAPI,
     Depends,
@@ -431,22 +433,26 @@ def get_incidents(
         IncidentModel
     )
 
+    # Filters are case-insensitive on purpose: the detection pipeline stores
+    # severities in mixed case (HIGH / MEDIUM / low) and the dashboard sends
+    # canonical lowercase values, so an exact match would silently drop rows.
+
     if status:
 
         query = query.filter(
-            IncidentModel.status == status
+            func.lower(IncidentModel.status) == func.lower(status)
         )
 
     if severity:
 
         query = query.filter(
-            IncidentModel.severity == severity
+            func.lower(IncidentModel.severity) == func.lower(severity)
         )
 
     if incident_type:
 
         query = query.filter(
-            IncidentModel.incident_type == incident_type
+            func.lower(IncidentModel.incident_type) == func.lower(incident_type)
         )
 
     return (

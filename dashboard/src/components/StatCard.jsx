@@ -55,7 +55,7 @@ export default function StatCard({
           <TrendIcon size={13} strokeWidth={2.6} />
           <span>{trend}</span>
         </div>
-        {sparkline && <Sparkline points={sparkline} color={`var(--tone-${tone})`} />}
+        {sparkline && sparkline.length > 0 && <Sparkline points={sparkline} color={`var(--tone-${tone})`} />}
       </div>
       <div className="stat-card__note">{trendNote}</div>
     </article>

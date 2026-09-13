@@ -165,3 +165,19 @@ export const IconUsers = (p) => (
     <path d="M15.7 14.7c2.1.3 3.6 1.7 4 4.3" />
   </svg>
 );
+
+export const IconRefresh = (p) => (
+  <svg {...base(p)} {...p}>
+    <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+    <path d="M20 4v4h-4" />
+  </svg>
+);
+
+export const IconTrash = (p) => (
+  <svg {...base(p)} {...p}>
+    <path d="M4 7h16" />
+    <path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    <path d="M6.5 7 7.5 20a1.5 1.5 0 0 0 1.5 1.3h6a1.5 1.5 0 0 0 1.5-1.3L17.5 7" />
+    <path d="M10 11v6M14 11v6" />
+  </svg>
+);

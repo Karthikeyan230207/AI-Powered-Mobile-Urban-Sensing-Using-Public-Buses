@@ -58,6 +58,9 @@ export default function DamageBreakdownCard({ segments = [], total = 0 }) {
               </span>
             </li>
           ))}
+          {segments.length === 0 && (
+            <li className="state-message">No incidents recorded yet.</li>
+          )}
         </ul>
       </div>
     </section>

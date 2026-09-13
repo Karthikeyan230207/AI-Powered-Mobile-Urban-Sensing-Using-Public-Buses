@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { IconSearch, IconCalendar, IconBell, IconChevronDown } from "./icons";
 
 function formatToday() {
@@ -6,23 +6,40 @@ function formatToday() {
   return today.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
-export default function Topbar({ user = { name: "Kannan", role: "Admin" }, notificationCount = 3, live = true }) {
+export default function Topbar({
+  user = { name: "Kannan", role: "Admin" },
+  notificationCount = 0,
+  live = true,
+  onSearch,
+}) {
+  const [query, setQuery] = useState("");
   const todayLabel = formatToday();
+
+  const handleSearch = (value) => {
+    setQuery(value);
+    onSearch?.(value);
+  };
 
   return (
     <header className="topbar">
       <div className="topbar__search">
         <IconSearch size={16} />
-        <input type="text" placeholder="Search location, road, or incident..." aria-label="Search" />
+        <input
+          type="text"
+          placeholder="Search location, road, or incident..."
+          aria-label="Search"
+          value={query}
+          onChange={(e) => handleSearch(e.target.value)}
+        />
       </div>
 
       <div className="topbar__right">
         <span className={`live-badge${live ? "" : " live-badge--off"}`}>
           <span className="live-badge__dot" />
-          Live Data
+          {live ? "Live Data" : "Offline"}
         </span>
 
-        <button type="button" className="date-range">
+        <button type="button" className="date-range" title="All available time range">
           <IconCalendar size={15} />
           <span>{todayLabel} – {todayLabel}</span>
           <IconChevronDown size={14} />
