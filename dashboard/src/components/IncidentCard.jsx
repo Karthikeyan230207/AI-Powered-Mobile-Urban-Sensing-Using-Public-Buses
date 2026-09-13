@@ -1,3 +1,5 @@
+import React from "react";
+
 function severityClass(severity = "") {
   return `severity severity--${String(severity).toLowerCase()}`;
 }

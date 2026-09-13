@@ -1,6 +1,6 @@
-from detectors.pothole_detector import PotholeDetector
-from detectors.crack_detector import CrackDetector
-from detectors.object_detector import ObjectDetector
+from ai.detectors.pothole_detector import PotholeDetector
+from ai.detectors.crack_detector import CrackDetector
+from ai.detectors.object_detector import ObjectDetector
 
 
 class DetectionEngine:

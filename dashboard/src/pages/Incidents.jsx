@@ -1,3 +1,5 @@
+import React from "react";
+
 export default function Incidents() {
   return (
     <main className="dashboard-page page-placeholder">

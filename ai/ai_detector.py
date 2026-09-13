@@ -1,5 +1,5 @@
-from detection_engine import DetectionEngine
-from config import (
+from ai.detection_engine import DetectionEngine
+from ai.config import (
     POTHOLE_MODEL_PATH,
     CRACK_MODEL_PATH,
     OBJECT_MODEL_PATH,
