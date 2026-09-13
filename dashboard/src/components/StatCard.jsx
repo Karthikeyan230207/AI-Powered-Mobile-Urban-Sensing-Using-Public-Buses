@@ -1,3 +1,5 @@
+import React from "react";
+
 export default function StatCard({ label, value, detail, icon, loading = false }) {
   return (
     <article className="stat-card">

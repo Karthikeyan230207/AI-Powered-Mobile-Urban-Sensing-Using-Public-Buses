@@ -1,3 +1,5 @@
+import React from "react";
+
 export default function AlertPopup({ message = "New incident detected" }) {
   return (
     <div className="alert-popup" role="status">

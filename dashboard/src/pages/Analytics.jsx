@@ -1,3 +1,5 @@
+import React from "react";
+
 export default function Analytics() {
   return (
     <main className="dashboard-page page-placeholder">

@@ -1,3 +1,5 @@
+import React from "react";
+
 export default function IncidentDetails({ incident, onClose }) {
   if (!incident) {
     return (

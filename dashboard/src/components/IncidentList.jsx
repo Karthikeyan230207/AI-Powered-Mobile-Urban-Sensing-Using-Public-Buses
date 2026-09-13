@@ -1,3 +1,5 @@
+import React from "react";
+
 import IncidentCard from "./IncidentCard";
 
 export default function IncidentList({ incidents = [], loading, error, onSelect }) {

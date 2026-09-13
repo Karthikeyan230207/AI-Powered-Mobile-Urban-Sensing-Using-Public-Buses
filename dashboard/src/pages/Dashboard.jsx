@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import StatCard from "../components/StatCard";
 import MapView from "../components/MapView";
 import IncidentList from "../components/IncidentList";
