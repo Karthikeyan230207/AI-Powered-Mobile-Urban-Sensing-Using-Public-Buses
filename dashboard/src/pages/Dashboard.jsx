@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import StatCard from "../components/StatCard";
 import MapView from "../components/MapView";
 import IncidentList from "../components/IncidentList";
@@ -6,6 +6,8 @@ import IncidentDetails from "../components/IncidentDetails";
 import FilterBar from "../components/FilterBar";
 import useIncidents from "../hooks/useIncidents";
 import useDashboardStats from "../hooks/useDashboardStats";
+import useIncidentWebSocket from "../hooks/useIncidentWebSocket";
+
 
 export default function Dashboard() {
   const [filters, setFilters] = useState({});
@@ -13,6 +15,12 @@ export default function Dashboard() {
   const { incidents, loading: incidentsLoading, error: incidentsError } = useIncidents(filters);
   const { stats, loading: statsLoading, error: statsError } = useDashboardStats();
 
+
+  const handleRealtimeIncident = useCallback((event) => {
+    console.log("[M5] Realtime incident:", event);
+  }, []);
+
+  useIncidentWebSocket(handleRealtimeIncident);
   return (
     <main className="dashboard-page">
       <section className="hero">

@@ -1,23 +1,47 @@
-import axios from "axios";
+const API_BASE_URL = "http://127.0.0.1:8000";
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://127.0.0.1:8000",
-  timeout: 10000,
-});
+export async function getIncidents(filters = {}) {
+  const params = new URLSearchParams();
 
-export const getDashboardStats = async () => {
-  const { data } = await api.get("/api/dashboard/stats");
-  return data;
-};
+  if (filters.status) {
+    params.append("status", filters.status);
+  }
 
-export const getIncidents = async (params = {}) => {
-  const { data } = await api.get("/api/incidents", { params });
-  return data;
-};
+  if (filters.severity) {
+    params.append("severity", filters.severity);
+  }
 
-export const getBuses = async () => {
-  const { data } = await api.get("/api/buses");
-  return data;
-};
+  if (filters.incident_type) {
+    params.append("incident_type", filters.incident_type);
+  }
 
-export default api;
+  const query = params.toString();
+
+  const url = `${API_BASE_URL}/api/incidents${
+    query ? `?${query}` : ""
+  }`;
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch incidents: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function getDashboardStats() {
+  const response = await fetch(
+    `${API_BASE_URL}/api/dashboard/stats`
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch dashboard stats: ${response.status}`
+    );
+  }
+
+  return response.json();
+}
+
+export { API_BASE_URL };
