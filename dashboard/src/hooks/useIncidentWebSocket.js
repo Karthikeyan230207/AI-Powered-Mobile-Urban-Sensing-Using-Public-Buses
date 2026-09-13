@@ -1,9 +1,12 @@
+
 import { useEffect } from "react";
 
 const WS_URL = "ws://127.0.0.1:8000/ws/incidents";
 
 export default function useIncidentWebSocket(onIncident) {
   useEffect(() => {
+    console.log("[M6] Connecting to WebSocket...");
+
     const socket = new WebSocket(WS_URL);
 
     socket.onopen = () => {
@@ -28,12 +31,20 @@ export default function useIncidentWebSocket(onIncident) {
       console.error("[M6] WebSocket error:", error);
     };
 
-    socket.onclose = () => {
-      console.log("[M6] WebSocket disconnected");
+    socket.onclose = (event) => {
+      console.log(
+        `[M6] WebSocket disconnected | Code: ${event.code}`
+      );
     };
 
     return () => {
-      socket.close();
+      if (
+        socket.readyState === WebSocket.OPEN ||
+        socket.readyState === WebSocket.CONNECTING
+      ) {
+        socket.close();
+      }
     };
   }, [onIncident]);
 }
+
