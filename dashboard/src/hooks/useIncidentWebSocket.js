@@ -1,7 +1,7 @@
 
 import { useEffect } from "react";
 
-const WS_URL = "ws://127.0.0.1:8000/ws/incidents";
+const WS_URL = "wss://192.168.43.34:8000/ws/incidents";
 
 export default function useIncidentWebSocket(onIncident) {
   useEffect(() => {

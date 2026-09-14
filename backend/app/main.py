@@ -30,6 +30,11 @@ from .schemas import (
     DashboardStats
 )
 
+import cv2
+import numpy as np
+
+from fastapi import UploadFile, File
+from ai.ai_detector import AIDetector
 # ============================================================
 # M6 - REALTIME IMPORTS
 # ============================================================
@@ -57,10 +62,14 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+
+
+mobile_detector = AIDetector()
 
 
 # ============================================================
@@ -72,6 +81,297 @@ def startup():
     init_db()
 
 
+@app.post("/api/mobile/test")
+async def mobile_test(data: dict):
+    print("[MOBILE] Received:", data)
+
+    return {
+        "message": "Mobile connected successfully",
+        "received": data
+    }
+
+@app.post("/api/mobile/gps")
+async def receive_mobile_gps(data: dict):
+
+    global latest_mobile_gps
+
+    latest_mobile_gps = {
+        "latitude": data.get("latitude"),
+        "longitude": data.get("longitude"),
+        "accuracy": data.get("accuracy"),
+        "speed": data.get("speed"),
+        "heading": data.get("heading")
+    }
+
+    print(
+        f"[MOBILE GPS] "
+        f"Lat: {latest_mobile_gps['latitude']} | "
+        f"Lon: {latest_mobile_gps['longitude']} | "
+        f"Accuracy: {latest_mobile_gps['accuracy']}m | "
+        f"Speed: {latest_mobile_gps['speed']} | "
+        f"Heading: {latest_mobile_gps['heading']}"
+    )
+
+    return {
+        "message": "GPS stored successfully",
+        "received": latest_mobile_gps
+    }
+
+
+def calculate_mobile_severity(confidence: float):
+
+    if confidence >= 0.85:
+        return "critical"
+
+    elif confidence >= 0.70:
+        return "high"
+
+    elif confidence >= 0.50:
+        return "medium"
+
+    return "low"
+
+@app.post("/api/mobile/detect")
+async def detect_mobile_frame(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+
+    global latest_mobile_gps
+
+    try:
+
+        # ========================================================
+        # 1. CHECK GPS
+        # ========================================================
+
+        if latest_mobile_gps is None:
+
+            return {
+                "success": False,
+                "message": "GPS data not available yet"
+            }
+
+        latitude = latest_mobile_gps.get("latitude")
+        longitude = latest_mobile_gps.get("longitude")
+
+        if latitude is None or longitude is None:
+
+            return {
+                "success": False,
+                "message": "Invalid GPS coordinates"
+            }
+
+        # ========================================================
+        # 2. READ IMAGE
+        # ========================================================
+
+        image_bytes = await file.read()
+
+        image_array = np.frombuffer(
+            image_bytes,
+            np.uint8
+        )
+
+        frame = cv2.imdecode(
+            image_array,
+            cv2.IMREAD_COLOR
+        )
+
+        if frame is None:
+
+            return {
+                "success": False,
+                "message": "Invalid image"
+            }
+
+        # ========================================================
+        # 3. RUN AI
+        # ========================================================
+
+        detections = mobile_detector.detect(frame)
+
+        print(
+            f"[MOBILE AI] "
+            f"Detections: {len(detections)}"
+        )
+
+        # ========================================================
+        # 4. STORE DETECTIONS + CREATE INCIDENTS
+        # ========================================================
+
+        created_incidents = []
+
+        for detection in detections:
+
+            # ----------------------------------------------------
+            # Get class/type
+            # ----------------------------------------------------
+
+            object_type = (
+                detection.get("class")
+                or detection.get("type")
+                or "unknown"
+            )
+
+            confidence = float(
+                detection.get("confidence", 0)
+            )
+
+            print(
+                f"[AI DETECTION] "
+                f"{object_type} | "
+                f"Confidence: {confidence:.2f}"
+            )
+
+            # ----------------------------------------------------
+            # Only create incident for potholes
+            # ----------------------------------------------------
+
+            if object_type.lower() != "pothole":
+
+                continue
+
+            # ----------------------------------------------------
+            # Severity
+            # ----------------------------------------------------
+
+            severity = calculate_mobile_severity(
+                confidence
+            )
+
+            # ----------------------------------------------------
+            # Priority score
+            # ----------------------------------------------------
+
+            priority_score = round(
+                confidence * 100,
+                2
+            )
+
+            # ====================================================
+            # SAVE DETECTION
+            # ====================================================
+
+            new_detection = Detection(
+                object_type=object_type,
+                confidence=confidence,
+                latitude=latitude,
+                longitude=longitude,
+                bus_number="MOBILE-01"
+            )
+
+            db.add(new_detection)
+
+            # ====================================================
+            # SAVE INCIDENT
+            # ====================================================
+
+            new_incident = IncidentModel(
+                incident_type="pothole",
+
+                description=(
+                    "Pothole detected by mobile "
+                    "urban sensing camera"
+                ),
+
+                latitude=latitude,
+                longitude=longitude,
+
+                confidence=confidence,
+
+                severity=severity,
+
+                priority_score=priority_score,
+
+                bus_number="MOBILE-01",
+
+                status="pending",
+
+                verified=False
+            )
+
+            db.add(new_incident)
+
+            # ----------------------------------------------------
+            # Keep object for response
+            # ----------------------------------------------------
+
+            created_incidents.append(
+                new_incident
+            )
+
+        # ========================================================
+        # 5. COMMIT DATABASE
+        # ========================================================
+
+        db.commit()
+
+        # Refresh database objects
+        for incident in created_incidents:
+
+            db.refresh(incident)
+
+        # ========================================================
+        # 6. WEBSOCKET BROADCAST
+        # ========================================================
+
+        for incident in created_incidents:
+
+            event = create_incident_event(
+                incident
+            )
+
+            await manager.broadcast(
+                event
+            )
+
+            print(
+                f"[M6] Incident broadcast | "
+                f"ID: {incident.id}"
+            )
+
+        # ========================================================
+        # 7. RESPONSE
+        # ========================================================
+
+        return {
+
+            "success": True,
+
+            "detections": detections,
+
+            "incidents_created": len(
+                created_incidents
+            ),
+
+            "incidents": [
+                {
+                    "id": incident.id,
+                    "type": incident.incident_type,
+                    "latitude": incident.latitude,
+                    "longitude": incident.longitude,
+                    "confidence": incident.confidence,
+                    "severity": incident.severity,
+                    "priority_score": incident.priority_score
+                }
+
+                for incident in created_incidents
+            ]
+        }
+
+    except Exception as e:
+
+        db.rollback()
+
+        print(
+            f"[MOBILE AI ERROR] {e}"
+        )
+
+        return {
+            "success": False,
+            "message": str(e)
+        }
 # ============================================================
 # ROOT
 # ============================================================
