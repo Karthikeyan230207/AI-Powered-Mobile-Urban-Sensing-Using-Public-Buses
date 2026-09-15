@@ -1,12 +1,16 @@
-
-import React, { useMemo, useState } from "react";
-
+import React, { useMemo } from "react";
 import HeroBanner from "../components/HeroBanner";
 import StatCard from "../components/StatCard";
 import MapView from "../components/MapView";
 import RecentIncidents from "../components/RecentIncidents";
 import IncidentDetails from "../components/IncidentDetails";
-import { IconBus, IconWarning, IconCamera, IconClock, IconRefresh } from "../components/icons";
+import {
+  IconBus,
+  IconWarning,
+  IconCamera,
+  IconClock,
+  IconRefresh,
+} from "../components/icons";
 import { computeFromIncidents } from "../utils/analytics";
 
 function matchesSearch(incident, query) {
@@ -20,6 +24,7 @@ function matchesSearch(incident, query) {
     incident.severity,
     incident.latitude,
     incident.longitude,
+    incident.id,
   ].some((value) => value != null && String(value).toLowerCase().includes(q));
 }
 
@@ -29,18 +34,38 @@ function formatTrend(pct) {
 
 function FleetStrip({ stats, loading }) {
   const items = [
-    { label: "Active Buses", value: stats?.active_buses ?? 0, sub: stats != null ? `of ${stats.total_buses} total` : "", icon: IconBus },
-    { label: "Critical Incidents", value: stats?.critical_incidents ?? 0, icon: IconWarning },
-    { label: "Pending Incidents", value: stats?.pending_incidents ?? 0, icon: IconClock },
-    { label: "Object Detections", value: stats?.total_detections ?? 0, icon: IconCamera },
+    {
+      label: "Active Sensing Buses",
+      value: stats?.active_buses ?? 0,
+      sub: stats != null ? `of ${stats.total_buses} total registered` : "",
+      icon: IconBus,
+    },
+    {
+      label: "Critical Road Hazards",
+      value: stats?.critical_incidents ?? 0,
+      icon: IconWarning,
+    },
+    {
+      label: "Pending Work Orders",
+      value: stats?.pending_incidents ?? 0,
+      icon: IconClock,
+    },
+    {
+      label: "AI Object Detections",
+      value: stats?.total_detections ?? 0,
+      icon: IconCamera,
+    },
   ];
+
   return (
     <section className="fleet-strip" aria-label="System status">
       {items.map((item) => {
         const Icon = item.icon;
         return (
           <div className="fleet-item" key={item.label}>
-            <span className="fleet-item__icon"><Icon size={15} /></span>
+            <span className="fleet-item__icon">
+              <Icon size={16} />
+            </span>
             <div className="fleet-item__text">
               <span className="fleet-item__label">{item.label}</span>
               <span className="fleet-item__value">
@@ -65,10 +90,13 @@ export default function Dashboard({
   statsError = null,
   refreshStats,
   searchQuery = "",
+  selectedIncident = null,
+  onSelectIncident,
+  onCloseIncident,
+  onUpdateStatus,
+  onDeleteIncident,
 }) {
-  const [selectedIncident, setSelectedIncident] = useState(null);
-
-  const data = useMemo(() => computeFromIncidents(incidents), [incidents]);
+  const data = useMemo(() => computeFromIncidents(incidents, 7), [incidents]);
 
   const visibleIncidents = useMemo(
     () => incidents.filter((incident) => matchesSearch(incident, searchQuery)),
@@ -92,7 +120,6 @@ export default function Dashboard({
         </div>
       )}
 
-
       <section className="hero-row">
         <HeroWithCards data={data} loading={loading} />
       </section>
@@ -100,47 +127,42 @@ export default function Dashboard({
       <FleetStrip stats={stats} loading={statsLoading} />
 
       <section className="dashboard-grid">
-        <MapView incidents={visibleIncidents} onSelect={setSelectedIncident} />
+        <MapView
+          incidents={visibleIncidents}
+          onSelect={onSelectIncident}
+        />
         <RecentIncidents
           incidents={visibleIncidents}
           loading={loading}
           error={error}
-          onSelect={setSelectedIncident}
+          onSelect={onSelectIncident}
         />
       </section>
 
-
-      {/* ======================================================
-          Incident Details
-      ====================================================== */}
-
+      {/* Selected Incident Details Modal / Inline Slide */}
       {selectedIncident && (
         <div className="details-grid">
-
           <IncidentDetails
             incident={selectedIncident}
-            onClose={() => setSelectedIncident(null)}
+            onClose={onCloseIncident}
+            onUpdateStatus={onUpdateStatus}
+            onDelete={onDeleteIncident}
           />
-
         </div>
       )}
-
     </div>
   );
 }
-function HeroWithCards({ data, loading }) {
 
+function HeroWithCards({ data, loading }) {
   return (
     <>
       <HeroBanner />
 
-
       <div className="hero-stats">
-
         {/* Total Damages */}
-
         <StatCard
-          label="Total Damages Detected"
+          label="Total Road Damages"
           value={data.total}
           icon="warning"
           tone="red"
@@ -150,11 +172,9 @@ function HeroWithCards({ data, loading }) {
           loading={loading}
         />
 
-
         {/* Repaired */}
-
         <StatCard
-          label="Successfully Repaired"
+          label="Repaired & Closed"
           value={data.repaired}
           icon="check"
           tone="green"
@@ -164,20 +184,19 @@ function HeroWithCards({ data, loading }) {
           loading={loading}
         />
 
-
         {/* Pending */}
-
         <StatCard
-          label="Pending Repairs"
+          label="Active Pending Repairs"
           value={data.pending}
           icon="clock"
           tone="amber"
           trend={formatTrend(data.pendingChangePct)}
           trendDirection={data.pendingChangePct >= 0 ? "up" : "down"}
-          sparkline={data.detected.map((d, i) => Math.max(0, d - (data.repairedTrend[i] || 0)))}
+          sparkline={data.detected.map((d, i) =>
+            Math.max(0, d - (data.repairedTrend[i] || 0))
+          )}
           loading={loading}
         />
-
       </div>
     </>
   );

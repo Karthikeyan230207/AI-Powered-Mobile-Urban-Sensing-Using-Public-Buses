@@ -5,9 +5,9 @@ import { DAMAGE_TYPES, isRepaired, normalizeType, dayLabel } from "./damage";
  * Everything renders from the live incident list returned by GET /api/incidents.
  */
 
-export function last7Days() {
+export function getDaysWindow(numDays = 7) {
   const out = [];
-  for (let i = 6; i >= 0; i -= 1) {
+  for (let i = numDays - 1; i >= 0; i -= 1) {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     d.setDate(d.getDate() - i);
@@ -16,7 +16,11 @@ export function last7Days() {
   return out;
 }
 
-export function computeFromIncidents(incidents = []) {
+export function last7Days() {
+  return getDaysWindow(7);
+}
+
+export function computeFromIncidents(incidents = [], numDays = 7) {
   const total = incidents.length;
   const repairedCount = incidents.filter(isRepaired).length;
   const pendingCount = total - repairedCount;
@@ -31,7 +35,7 @@ export function computeFromIncidents(incidents = []) {
     .map((key) => ({ key, label: DAMAGE_TYPES[key].label, color: DAMAGE_TYPES[key].color, value: typeCounts[key] }))
     .sort((a, b) => b.value - a.value);
 
-  const window = last7Days();
+  const window = getDaysWindow(numDays);
   const days = window.map((d) => dayLabel(d));
   const detected = window.map((d) => {
     const dayStr = d.toDateString();
@@ -44,14 +48,14 @@ export function computeFromIncidents(incidents = []) {
     ).length;
   });
 
-  const prevWeekStart = new Date(window[0]);
-  prevWeekStart.setDate(prevWeekStart.getDate() - 7);
-  const prevWeekIncidents = incidents.filter((i) => {
+  const prevPeriodStart = new Date(window[0]);
+  prevPeriodStart.setDate(prevPeriodStart.getDate() - numDays);
+  const prevPeriodIncidents = incidents.filter((i) => {
     if (!i.detected_at) return false;
     const t = new Date(i.detected_at);
-    return t >= prevWeekStart && t < window[0];
+    return t >= prevPeriodStart && t < window[0];
   });
-  const currentWeekIncidents = incidents.filter((i) => {
+  const currentPeriodIncidents = incidents.filter((i) => {
     if (!i.detected_at) return false;
     const t = new Date(i.detected_at);
     return t >= window[0];
@@ -80,14 +84,14 @@ export function computeFromIncidents(incidents = []) {
     detected,
     repairedTrend,
     locations,
-    damagesChangePct: pctChange(currentWeekIncidents.length, prevWeekIncidents.length),
+    damagesChangePct: pctChange(currentPeriodIncidents.length, prevPeriodIncidents.length),
     repairedChangePct: pctChange(
-      currentWeekIncidents.filter(isRepaired).length,
-      prevWeekIncidents.filter(isRepaired).length
+      currentPeriodIncidents.filter(isRepaired).length,
+      prevPeriodIncidents.filter(isRepaired).length
     ),
     pendingChangePct: pctChange(
-      currentWeekIncidents.filter((i) => !isRepaired(i)).length,
-      prevWeekIncidents.filter((i) => !isRepaired(i)).length
+      currentPeriodIncidents.filter((i) => !isRepaired(i)).length,
+      prevPeriodIncidents.filter((i) => !isRepaired(i)).length
     ),
   };
 }

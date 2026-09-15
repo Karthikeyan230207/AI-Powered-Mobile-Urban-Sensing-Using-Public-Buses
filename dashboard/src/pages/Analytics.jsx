@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import DamageBreakdownCard from "../components/DamageBreakdownCard";
 import RepairProgressCard from "../components/RepairProgressCard";
 import DamageTrendsCard from "../components/DamageTrendsCard";
@@ -8,34 +8,67 @@ import BusesCard from "../components/BusesCard";
 import useDetections from "../hooks/useDetections";
 import useBuses from "../hooks/useBuses";
 import { computeFromIncidents } from "../utils/analytics";
-import { IconRefresh } from "../components/icons";
+import { IconRefresh, IconDownload } from "../components/icons";
+import { downloadCSV } from "../utils/export";
 
-/**
- * Detailed reporting page — the single source of truth for all analytics
- * visualizations. Incident data comes from the shared feed in App.jsx
- * (one REST fetch + realtime websocket), so charts update live.
- */
 export default function Analytics({
   incidents = [],
   loading = false,
   error = null,
   refreshIncidents,
 }) {
-  const { detections, loading: detectionsLoading, error: detectionsError, refresh: refreshDetections } = useDetections();
-  const { buses, loading: busesLoading, error: busesError, refresh: refreshBuses } = useBuses();
+  const [rangeDays, setRangeDays] = useState(7);
+  const {
+    detections,
+    loading: detectionsLoading,
+    error: detectionsError,
+    refresh: refreshDetections,
+  } = useDetections();
+  const {
+    buses,
+    loading: busesLoading,
+    error: busesError,
+    refresh: refreshBuses,
+  } = useBuses();
 
-  const data = useMemo(() => computeFromIncidents(incidents), [incidents]);
+  const data = useMemo(
+    () => computeFromIncidents(incidents, rangeDays),
+    [incidents, rangeDays]
+  );
+
   const apiError = error || detectionsError || busesError;
   const retry = () => {
-    refreshIncidents();
-    refreshDetections();
-    refreshBuses();
+    refreshIncidents?.();
+    refreshDetections?.();
+    refreshBuses?.();
+  };
+
+  const handleLocationClick = (locationName) => {
+    window.location.hash = "#/incidents";
   };
 
   return (
     <div className="dashboard-page analytics-page">
-      <p className="eyebrow">Insights</p>
-      <h1 className="page-title">Analytics</h1>
+      <div className="page-header-row">
+        <div>
+          <p className="eyebrow">Intelligence & Insights</p>
+          <h1 className="page-title">Urban Analytics Engine</h1>
+        </div>
+
+        <div className="page-header-actions">
+          <button
+            type="button"
+            className="secondary-button secondary-button--outline"
+            onClick={() => downloadCSV(incidents, `sensing_analytics_${Date.now()}.csv`)}
+            disabled={incidents.length === 0}
+          >
+            <IconDownload size={14} /> Export Report
+          </button>
+          <button type="button" className="retry-button" onClick={retry} title="Refresh all datasets">
+            <IconRefresh size={13} /> Refresh All
+          </button>
+        </div>
+      </div>
 
       {apiError && (
         <div className="api-banner">
@@ -46,8 +79,15 @@ export default function Analytics({
         </div>
       )}
 
+      {/* Top Insights Row: Trends & Breakdown & Repair */}
       <section className="insights-grid">
-        <DamageTrendsCard days={data.days} detected={data.detected} repaired={data.repairedTrend} />
+        <DamageTrendsCard
+          days={data.days}
+          detected={data.detected}
+          repaired={data.repairedTrend}
+          activeRange={rangeDays}
+          onRangeChange={setRangeDays}
+        />
         <DamageBreakdownCard segments={data.breakdown} total={data.total} />
         <RepairProgressCard
           total={data.total}
@@ -55,12 +95,25 @@ export default function Analytics({
           pending={data.pending}
           improvement={data.repairedChangePct}
         />
-        <TopLocationsCard locations={data.locations} />
+        <TopLocationsCard
+          locations={data.locations}
+          onLocationClick={handleLocationClick}
+        />
       </section>
 
+      {/* Fleet & Detections Row */}
       <section className="analytics-grid">
-        <DetectionsCard detections={detections} loading={detectionsLoading} error={detectionsError} />
-        <BusesCard buses={buses} loading={busesLoading} error={busesError} />
+        <DetectionsCard
+          detections={detections}
+          loading={detectionsLoading}
+          error={detectionsError}
+        />
+        <BusesCard
+          buses={buses}
+          loading={busesLoading}
+          error={busesError}
+          onRefresh={refreshBuses}
+        />
       </section>
     </div>
   );
