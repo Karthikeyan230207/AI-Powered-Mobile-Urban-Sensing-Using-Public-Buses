@@ -1,78 +1,65 @@
-import { useCallback, useEffect, useState } from "react";
-import { getIncidents } from "../services/api";
-import useIncidentWebSocket from "./useIncidentWebSocket";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getIncidents, getErrorMessage } from "../services/api";
 
-export default function useIncidents(filters = {}) {
+/**
+ * Loads incidents from GET /api/incidents and keeps the list in sync with
+ * create / update / delete actions and realtime websocket events.
+ */
+export default function useIncidents(params = {}) {
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const paramsKey = useMemo(() => JSON.stringify(params), [params]);
+  const paramsRef = useRef(params);
+  paramsRef.current = params;
 
-  // --------------------------------------------------
-  // Initial incidents from REST API
-  // --------------------------------------------------
+  const loadIncidents = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await getIncidents(paramsRef.current);
+      const items = Array.isArray(data) ? data : data?.incidents || data?.items || [];
+      setIncidents(items);
+    } catch (err) {
+      setError(getErrorMessage(err, "Could not load incidents."));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadIncidents() {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const data = await getIncidents(filters);
-
-        if (!cancelled) {
-          setIncidents(data);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error("Incident API error:", err);
-          setError(err);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
     loadIncidents();
+  }, [loadIncidents, paramsKey]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    filters.status,
-    filters.severity,
-    filters.incident_type
-  ]);
-
-  // --------------------------------------------------
-  // Receive new incident from M6 WebSocket
-  // --------------------------------------------------
-
-  const handleNewIncident = useCallback((newIncident) => {
-    console.log("[M5] New incident received:", newIncident);
-
-    setIncidents((currentIncidents) => {
-      // Prevent duplicate incident
-      const alreadyExists = currentIncidents.some(
-        (incident) => incident.id === newIncident.id
-      );
-
-      if (alreadyExists) {
-        return currentIncidents;
-      }
-
-      return [newIncident, ...currentIncidents];
+  // Add a single incident at the top (used after create or websocket event).
+  const prependIncident = useCallback((incident) => {
+    if (!incident) return;
+    setIncidents((current) => {
+      if (current.some((item) => item?.id === incident.id)) return current;
+      return [incident, ...current];
     });
   }, []);
 
-  useIncidentWebSocket(handleNewIncident);
+  // Merge partial updates into an existing item (used after PUT /api/incidents/:id).
+  const patchIncident = useCallback((incidentId, changes) => {
+    setIncidents((current) =>
+      current.map((item) => (item?.id === incidentId ? { ...item, ...changes } : item))
+    );
+  }, []);
+
+  // Remove an incident (used after DELETE /api/incidents/:id).
+  const removeIncident = useCallback((incidentId) => {
+    setIncidents((current) => current.filter((item) => item?.id !== incidentId));
+  }, []);
 
   return {
     incidents,
     loading,
-    error
+    error,
+    refresh: loadIncidents,
+    prependIncident,
+    patchIncident,
+    removeIncident,
   };
 }
